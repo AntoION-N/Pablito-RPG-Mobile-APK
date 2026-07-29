@@ -23,21 +23,7 @@ jobs:
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
 
-    - name: Configure Android SDK
-      run: |
-        export PATH=$PATH:~/.local/bin
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-        export PATH=$PATH:$JAVA_HOME/bin
-        
-        # Crear directorio para SDK
-        mkdir -p ~/.buildozer/android/platform
-        mkdir -p ~/.android
-        
-        # Aceptar licencias de Android
-        echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
-        yes | ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
-
-    - name: Create buildozer.spec
+    - name: Create buildozer.spec (FORZANDO build-tools 33.0.2)
       run: |
         cat > buildozer.spec << 'EOF'
         [app]
@@ -56,6 +42,7 @@ jobs:
         android.ndk = 23b
         android.sdk = 33
         android.build_tools = 33.0.2
+        android.gradle_dependencies = ''
         log_level = 2
         main.py = main.py
         EOF
@@ -69,17 +56,11 @@ jobs:
         export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
         export PATH=$PATH:$JAVA_HOME/bin
         
-        # Forzar aceptación de licencias antes de compilar
+        # Crear directorio para licencias
         mkdir -p ~/.android
         echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
         
-        # Comandos para aceptar licencias automáticamente
-        if [ -f ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager ]; then
-          echo "y" | ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
-          ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
-        fi
-        
-        # Compilar
+        # COMPILAR - IGNORANDO build-tools 37
         buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
