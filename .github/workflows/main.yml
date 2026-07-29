@@ -12,11 +12,12 @@ jobs:
       image: kivy/buildozer
 
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Create buildozer.spec
+    - name: Build APK
       run: |
+        # 1. Crear buildozer.spec desde cero
         cat > buildozer.spec << 'EOF'
         [app]
         title = Pablito RPG 2D
@@ -38,33 +39,18 @@ jobs:
         main.py = PablitoRPG_Mob.py
         EOF
 
-    - name: Install aidl manually (with full path)
-      run: |
-        # Usar sdkmanager con ruta completa
-        SDKMANAGER="/github/home/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
-        if [ -f "$SDKMANAGER" ]; then
-          echo "Instalando build-tools 33.0.2..."
-          yes | $SDKMANAGER "build-tools;33.0.2" 2>/dev/null || true
-          echo "Verificando aidl..."
-          find /github/home/.buildozer -name "aidl" 2>/dev/null
-        else
-          echo "⚠️ sdkmanager no encontrado en $SDKMANAGER"
-        fi
+        # 2. Verificar que el archivo existe
+        echo "=== Archivos en el directorio ==="
+        ls -la
+        echo "=== Archivo main.py ==="
+        cat PablitoRPG_Mob.py | head -20 || echo "⚠️ No se encontró PablitoRPG_Mob.py"
 
-    - name: Build APK
-      run: |
-        echo "y" | buildozer android debug 2>&1 | tee build.log
+        # 3. Compilar
+        echo "=== Compilando APK ==="
+        yes | buildozer android debug
 
     - name: Upload APK
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: pablito-rpg-apk
         path: bin/*.apk
-
-    - name: Upload build log
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-log
-        path: build.log
