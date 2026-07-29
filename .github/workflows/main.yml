@@ -15,30 +15,35 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build APK
+    - name: Create buildozer.spec directly
       run: |
-        buildozer init
-        
-        # Configurar buildozer.spec
-        sed -i 's/^#.*requirements.*/requirements = python3,pygame,pillow/' buildozer.spec
-        sed -i 's/^#.*android.api.*/android.api = 33/' buildozer.spec
-        sed -i 's/^#.*android.minapi.*/android.minapi = 21/' buildozer.spec
-        sed -i 's/^#.*android.ndk.*/android.ndk = 28c/' buildozer.spec
-        sed -i 's/^#.*android.sdk.*/android.sdk = 33/' buildozer.spec
-        sed -i 's/^#.*android.build_tools.*/android.build_tools = 33.0.2/' buildozer.spec
-        sed -i 's/^#.*source.include_exts.*/source.include_exts = py,png,jpg,kv,atlas,ttf,mp3,wav/' buildozer.spec
-        echo "main.py = PablitoRPG_Mob.py" >> buildozer.spec
-        echo "fullscreen = 1" >> buildozer.spec
-        echo "orientation = landscape" >> buildozer.spec
-        echo "package.name = pablitorpg" >> buildozer.spec
-        echo "package.domain = org.yourname" >> buildozer.spec
-        echo "title = Pablito RPG 2D" >> buildozer.spec
-        echo "version = 1.0.0" >> buildozer.spec
+        cat > buildozer.spec << 'EOF'
+        [app]
+        title = Pablito RPG 2D
+        package.name = pablitorpg
+        package.domain = org.yourname
+        version = 1.0.0
+        source.dir = .
+        source.include_exts = py,png,jpg,kv,atlas,ttf,mp3,wav
+        requirements = python3,pygame,pillow
+        orientation = landscape
+        fullscreen = 1
+        android.permissions = INTERNET
+        android.api = 33
+        android.minapi = 21
+        android.ndk = 28c
+        android.sdk = 33
+        android.build_tools = 33.0.2
+        log_level = 2
+        main.py = PablitoRPG_Mob.py
+        EOF
         
         echo "=== buildozer.spec ==="
         cat buildozer.spec
-        
-        yes | buildozer android debug 2>&1 | tee build.log
+
+    - name: Build APK
+      run: |
+        echo "y" | buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
       if: success()
