@@ -38,6 +38,9 @@ jobs:
         fullscreen = 1
         android.permissions = INTERNET
         log_level = 2
+
+        # 🔥 ESTO ES NUEVO - Le dice a Buildozer qué archivo ejecutar
+        main.py = PablitoRPG_Mob.py
         EOF
 
     - name: Build APK
