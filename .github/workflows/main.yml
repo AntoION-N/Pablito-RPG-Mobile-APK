@@ -23,12 +23,11 @@ jobs:
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
 
-    - name: Verify files
+    - name: Accept Android license (CRITICAL FIX)
       run: |
-        echo "=== Archivos en el directorio ==="
-        ls -la
-        echo "=== Buscando main.py ==="
-        find . -name "main.py" -type f
+        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+        export PATH=$PATH:$JAVA_HOME/bin
+        yes | /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
 
     - name: Create buildozer.spec
       run: |
@@ -53,7 +52,7 @@ jobs:
         main.py = main.py
         EOF
         
-        echo "=== buildozer.spec creado ==="
+        echo "=== buildozer.spec ==="
         cat buildozer.spec
 
     - name: Build APK
@@ -65,7 +64,10 @@ jobs:
         mkdir -p ~/.android
         echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
         
-        buildozer -v android debug 2>&1 | tee build.log
+        # Forzar build-tools 33.0.2 en lugar de 37.0.0
+        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;33.0.2" || true
+        
+        buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
       if: success()
