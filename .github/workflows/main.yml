@@ -15,7 +15,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Create buildozer.spec directly
+    - name: Create buildozer.spec
       run: |
         cat > buildozer.spec << 'EOF'
         [app]
@@ -43,6 +43,7 @@ jobs:
 
     - name: Build APK
       run: |
+        # Forzar aceptación de licencias y compilar
         echo "y" | buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
