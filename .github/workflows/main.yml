@@ -61,7 +61,7 @@ jobs:
 
         log_level = 2
 
-        main.py = main.py
+        main.py = PablitoRPG_Mob.py
         EOF
 
     - name: Setup Android SDK manually
