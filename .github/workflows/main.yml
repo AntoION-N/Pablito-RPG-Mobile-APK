@@ -37,13 +37,22 @@ jobs:
         log_level = 2
         main.py = PablitoRPG_Mob.py
         EOF
-        
-        echo "=== buildozer.spec ==="
-        cat buildozer.spec
+
+    - name: Install aidl manually (with full path)
+      run: |
+        # Usar sdkmanager con ruta completa
+        SDKMANAGER="/github/home/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+        if [ -f "$SDKMANAGER" ]; then
+          echo "Instalando build-tools 33.0.2..."
+          yes | $SDKMANAGER "build-tools;33.0.2" 2>/dev/null || true
+          echo "Verificando aidl..."
+          find /github/home/.buildozer -name "aidl" 2>/dev/null
+        else
+          echo "⚠️ sdkmanager no encontrado en $SDKMANAGER"
+        fi
 
     - name: Build APK
       run: |
-        # Forzar aceptación de licencias y compilar
         echo "y" | buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
