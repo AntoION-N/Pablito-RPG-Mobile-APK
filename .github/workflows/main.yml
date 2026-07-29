@@ -23,14 +23,6 @@ jobs:
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
 
-    - name: Accept Android licenses
-      run: |
-        mkdir -p ~/.android
-        echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-        export PATH=$PATH:$JAVA_HOME/bin
-        yes | /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
-
     - name: Create buildozer.spec
       run: |
         cat > buildozer.spec << 'EOF'
@@ -53,18 +45,25 @@ jobs:
         main.py = PablitoRPG_Mob.py
         EOF
 
-    - name: List files (debug)
+    - name: Debug files
       run: |
+        echo "=== Archivos en el directorio ==="
         ls -la
-        echo "=== Archivos encontrados ==="
-        find . -name "*.py"
+        echo "=== Buscando archivos .py ==="
+        find . -name "*.py" -type f
 
     - name: Build APK
       run: |
         export PATH=$PATH:~/.local/bin
         export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
         export PATH=$PATH:$JAVA_HOME/bin
-        buildozer android debug 2>&1 | tee build.log
+        
+        # Crear directorios y aceptar licencias ANTES de buildozer
+        mkdir -p ~/.android
+        echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
+        
+        # Ejecutar buildozer con verbose
+        buildozer -v android debug 2>&1 | tee build.log
 
     - name: Upload APK
       if: success()
