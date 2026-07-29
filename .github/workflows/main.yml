@@ -37,41 +37,23 @@ jobs:
         echo "ANDROID_HOME=$PWD/android-sdk" >> $GITHUB_ENV
         echo "PATH=$PATH:$PWD/android-sdk/cmdline-tools/latest/bin:$PWD/android-sdk/platform-tools" >> $GITHUB_ENV
 
-    - name: Create buildozer.spec for p4a
-      run: |
-        cat > buildozer.spec << 'EOF'
-        [app]
-        title = Pablito RPG 2D
-        package.name = pablitorpg
-        package.domain = org.yourname
-        version = 1.0.0
-        source.dir = .
-        source.include_exts = py,png,jpg,kv,atlas,ttf,mp3,wav
-        requirements = python3,pygame,pillow
-        orientation = landscape
-        fullscreen = 1
-        android.permissions = INTERNET
-        android.api = 33
-        android.minapi = 21
-        android.ndk = 23b
-        android.sdk = 33
-        android.build_tools = 33.0.2
-        log_level = 2
-        main.py = main.py
-        EOF
-
     - name: Build APK with p4a
       run: |
         export ANDROID_HOME=${{ env.ANDROID_HOME }}
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
         export PATH=$PATH:$JAVA_HOME/bin
+        export PATH=$PATH:~/.local/bin
+        
+        # Verificar que p4a está instalado
+        which p4a || echo "p4a not in PATH"
+        python3 -m pip show python-for-android || echo "p4a not installed"
         
         # Crear directorio de trabajo
         mkdir -p .buildozer/android/platform
         
-        # Usar p4a directamente
-        python3 -m p4a apk \
+        # Usar p4a directamente (con ruta completa)
+        ~/.local/bin/p4a apk \
           --private . \
           --package=org.yourname.pablitorpg \
           --name="Pablito RPG 2D" \
