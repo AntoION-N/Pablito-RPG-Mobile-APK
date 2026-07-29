@@ -17,11 +17,19 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y git zip unzip openjdk-17-jdk python3-pip \
-        python3-virtualenv autoconf libtool pkg-config zlib1g-dev \
+        python3-dev python3-virtualenv autoconf libtool pkg-config zlib1g-dev \
         libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev \
         libssl-dev automake autopoint gettext
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
+
+    - name: Accept Android licenses
+      run: |
+        mkdir -p ~/.android
+        echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
+        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+        export PATH=$PATH:$JAVA_HOME/bin
+        yes | /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
 
     - name: Create buildozer.spec
       run: |
@@ -32,24 +40,42 @@ jobs:
         package.domain = org.yourname
         version = 1.0.0
         source.dir = .
-        source.include_exts = py,png,jpg,kv,atlas,ttf
+        source.include_exts = py,png,jpg,kv,atlas,ttf,mp3,wav
         requirements = python3,pygame,pillow
         orientation = landscape
         fullscreen = 1
         android.permissions = INTERNET
+        android.api = 33
+        android.minapi = 21
+        android.ndk = 23b
+        android.sdk = 33
         log_level = 2
-
-        # 🔥 ESTO ES NUEVO - Le dice a Buildozer qué archivo ejecutar
         main.py = PablitoRPG_Mob.py
         EOF
+
+    - name: List files (debug)
+      run: |
+        ls -la
+        echo "=== Archivos encontrados ==="
+        find . -name "*.py"
 
     - name: Build APK
       run: |
         export PATH=$PATH:~/.local/bin
-        buildozer android debug
+        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+        export PATH=$PATH:$JAVA_HOME/bin
+        buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: pablito-rpg-apk
         path: bin/*.apk
+
+    - name: Upload build log if failed
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
