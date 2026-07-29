@@ -23,50 +23,9 @@ jobs:
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
 
-    - name: Setup Android SDK (con enlace simbólico)
-      run: |
-        export PATH=$PATH:~/.local/bin
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-        export PATH=$PATH:$JAVA_HOME/bin
-
-        mkdir -p ~/.buildozer/android/platform
-        mkdir -p ~/.android
-        echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
-
-        # Descargar SDK si no existe
-        if [ ! -d ~/.buildozer/android/platform/android-sdk ]; then
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/sdk.zip
-          unzip -q /tmp/sdk.zip -d /tmp/sdk
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-          mv /tmp/sdk/cmdline-tools/* ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/ 2>/dev/null || true
-          mv /tmp/sdk/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
-          rm -rf /tmp/sdk /tmp/sdk.zip
-        fi
-
-        export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-
-        # 🔥 CREAR ESTRUCTURA QUE BUILDOZER ESPERA
-        mkdir -p $ANDROID_HOME/tools/bin
-        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
-        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager $ANDROID_HOME/tools/bin/avdmanager
-        ln -s $ANDROID_HOME/cmdline-tools/latest/lib $ANDROID_HOME/tools/lib 2>/dev/null || true
-
-        # Aceptar licencias
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" > /dev/null 2>&1 || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" > /dev/null 2>&1 || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" > /dev/null 2>&1 || true
-
-        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-        echo "PATH=$PATH" >> $GITHUB_ENV
-
     - name: Create buildozer.spec
       run: |
-        MAIN_FILE=$(find . -maxdepth 1 -name "*.py" -not -name "buildozer*" | head -1 | sed 's|\./||')
-        echo "📄 Archivo principal: $MAIN_FILE"
-        
-        cat > buildozer.spec << EOF
+        cat > buildozer.spec << 'EOF'
         [app]
         title = Pablito RPG 2D
         package.name = pablitorpg
@@ -80,11 +39,11 @@ jobs:
         android.permissions = INTERNET
         android.api = 33
         android.minapi = 21
-        android.ndk = 23b
+        android.ndk = 28c
         android.sdk = 33
         android.build_tools = 33.0.2
         log_level = 2
-        main.py = $MAIN_FILE
+        main.py = PablitoRPG_Mob.py
         EOF
 
     - name: Build APK
@@ -92,16 +51,8 @@ jobs:
         export PATH=$PATH:~/.local/bin
         export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
         export PATH=$PATH:$JAVA_HOME/bin
-        export ANDROID_HOME=${{ env.ANDROID_HOME }}
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-
-        echo "=== VERIFICANDO SDK ==="
-        ls -la $ANDROID_HOME/tools/bin/ || true
-        echo "=== sdkmanager ==="
-        which sdkmanager || true
-
-        echo "=== COMPILANDO ==="
-        echo "y" | buildozer android debug 2>&1 | tee build.log
+        
+        yes | buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
       if: success()
