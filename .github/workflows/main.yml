@@ -23,7 +23,7 @@ jobs:
         pip3 install --user --upgrade buildozer
         pip3 install --user --upgrade Cython==0.29.34
 
-    - name: Setup Android SDK
+    - name: Setup Android SDK (con enlace simbólico)
       run: |
         export PATH=$PATH:~/.local/bin
         export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
@@ -33,6 +33,7 @@ jobs:
         mkdir -p ~/.android
         echo -e "count=0\nts_ms=1697151593159\ndisplay_name=Android SDK" > ~/.android/repositories.cfg
 
+        # Descargar SDK si no existe
         if [ ! -d ~/.buildozer/android/platform/android-sdk ]; then
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/sdk.zip
           unzip -q /tmp/sdk.zip -d /tmp/sdk
@@ -45,6 +46,13 @@ jobs:
         export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
 
+        # 🔥 CREAR ESTRUCTURA QUE BUILDOZER ESPERA
+        mkdir -p $ANDROID_HOME/tools/bin
+        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
+        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager $ANDROID_HOME/tools/bin/avdmanager
+        ln -s $ANDROID_HOME/cmdline-tools/latest/lib $ANDROID_HOME/tools/lib 2>/dev/null || true
+
+        # Aceptar licencias
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" > /dev/null 2>&1 || true
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" > /dev/null 2>&1 || true
@@ -55,9 +63,8 @@ jobs:
 
     - name: Create buildozer.spec
       run: |
-        # DETECTAR EL ARCHIVO .py AUTOMÁTICAMENTE
         MAIN_FILE=$(find . -maxdepth 1 -name "*.py" -not -name "buildozer*" | head -1 | sed 's|\./||')
-        echo "📄 Archivo principal detectado: $MAIN_FILE"
+        echo "📄 Archivo principal: $MAIN_FILE"
         
         cat > buildozer.spec << EOF
         [app]
@@ -88,11 +95,12 @@ jobs:
         export ANDROID_HOME=${{ env.ANDROID_HOME }}
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
 
-        echo "=== ARCHIVOS EN LA RAÍZ ==="
-        ls -la
-        echo "=== buildozer.spec ==="
-        cat buildozer.spec
+        echo "=== VERIFICANDO SDK ==="
+        ls -la $ANDROID_HOME/tools/bin/ || true
+        echo "=== sdkmanager ==="
+        which sdkmanager || true
 
+        echo "=== COMPILANDO ==="
         echo "y" | buildozer android debug 2>&1 | tee build.log
 
     - name: Upload APK
